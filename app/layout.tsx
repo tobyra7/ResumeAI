@@ -9,9 +9,9 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito" });
 
 export const metadata: Metadata = {
-  title: "ResumeAI - Professional AI Resume Builder",
+  title: "Nala 🐶 - AI Cover Letter Generator",
   description:
-    "Generate a polished, professional resume in just a few clicks with our AI-powered resume builder.",
+    "Generate tailored cover letters from a job description and your CV using AI.",
   icons: {
     icon: "/icons/favicon.ico",
   },

@@ -15,10 +15,10 @@ const page = () => {
       <section>
         <div className="py-8 px-6 mx-auto max-w-screen-xl text-center lg:py-16 lg:px-12 md:px-10">
           <h1 className="mt-4 lg:mt-8 mb-4 text-4xl font-extrabold tracking-tight leading-none text-black md:text-5xl lg:text-6xl">
-            Build Your Resume <span className="text-primary-700 max-sm:block">With AI</span>
+            Generate Tailored <span className="text-primary-700 max-sm:block">Cover Letters</span> With AI
           </h1>
           <p className="mb-8 text-lg font-normal text-gray-700 lg:text-xl sm:px-16 xl:px-48">
-            Effortlessly Craft a Professional Resume with Our AI-Powered Builder
+            Paste a job description and attach your current CV — get a personalized cover letter that highlights why you're the perfect fit.
           </p>
           <div className="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-4">
             <Link
@@ -26,7 +26,7 @@ const page = () => {
               className="relative flex h-11 w-full items-center justify-center px-6 before:absolute before:inset-0 before:rounded-full before:bg-primary-700 before:transition before:duration-300 hover:before:scale-105 active:duration-75 active:before:scale-95 sm:w-max"
             >
               <span className="relative text-base font-semibold text-white">
-                Get Started
+                Create Cover Letter
               </span>
             </Link>
             <Link
@@ -42,10 +42,10 @@ const page = () => {
       </section>
       <section className="py-8 px-6 mx-auto max-w-screen-xl text-center lg:py-8 lg:px-12 md:px-10">
         <h2 className="font-bold text-3xl" id="learn-more">
-          How it Works?
+          How it Works
         </h2>
         <h2 className="text-md text-gray-500">
-          Generate resume in just 3 steps
+          Create a tailored cover letter in just 3 steps
         </h2>
 
         <div className="mt-8 grid grid-cols-1 gap-8 text-center md:text-start md:grid-cols-2 lg:grid-cols-3 md:px-24">
@@ -53,13 +53,11 @@ const page = () => {
             <AtomIcon className="h-8 w-8" />
 
             <h2 className="mt-4 text-xl font-bold text-black">
-              Create Your Template
+              Provide the Job Description
             </h2>
 
             <p className="mt-1 text-sm text-gray-600 md:text-justify">
-              Start by selecting the color scheme for your resume template. Our
-              single, professionally designed template ensures a clean and
-              consistent look for all users.
+              Paste or upload the job description youre applying for — the more detail, the better the tailoring.
             </p>
           </div>
 
@@ -67,13 +65,11 @@ const page = () => {
             <Edit className="h-8 w-8" />
 
             <h2 className="mt-4 text-xl font-bold text-black">
-              Update Your Information
+              Attach Your CV
             </h2>
 
             <p className="mt-1 text-sm text-gray-600 md:text-justify">
-              Enter your personal details, work experience, education, and
-              skills into the provided form. Our AI assists you in filling out
-              each section accurately and effectively.
+              Upload your current CV (PDF or DOCX). Our system extracts the key experience and skills to incorporate into your cover letter.
             </p>
           </div>
 
@@ -81,14 +77,11 @@ const page = () => {
             <Share2 className="h-8 w-8" />
 
             <h2 className="mt-4 text-xl font-bold text-black">
-              Share Your Resume
+              Generate & Customize
             </h2>
 
             <p className="mt-1 text-sm text-gray-600 md:text-justify">
-              After completing your resume, save it securely and generate a
-              shareable link. Easily update your information anytime and share
-              the link with potential employers or download it in a preferred
-              format.
+              Generate a draft cover letter tailored to the role, then edit the tone or details to make it your own.
             </p>
           </div>
         </div>
@@ -100,7 +93,7 @@ const page = () => {
           >
             <div className="flex items-center justify-center">
               <ArrowBigUp className="h-6 w-6 mr-2" />
-              Get Started Today
+              Start Generating
             </div>
           </Link>
         </div>
