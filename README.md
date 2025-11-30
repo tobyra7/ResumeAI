@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/-Typescript-black?style=for-the-badge&logoColor=white&logo=typescript&color=387CC8" alt="typescript" />
   </div>
 
-  <h2 align="center">ResumeAI</h2>
+  <h2 align="center">ResumeAI - Tobyra playground</h2>
 
   <div align="center">
      <b>ResumeAI</b> is designed to make resume creation effortless. With the help of AI, users can generate, update, and customize their resumes, ensuring they stand out to potential employers. The application is secure, user-friendly, and highly customizable.
