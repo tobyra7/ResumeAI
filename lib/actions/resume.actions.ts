@@ -1,12 +1,9 @@
 "use server";
 
-import { useUser } from "@clerk/nextjs";
-import Education from "../models/education.model";
-import Experience from "../models/experience.model";
-import Resume from "../models/resume.model";
-import Skill from "../models/skill.model";
-import { connectToDB } from "../mongoose";
+import { PrismaClient } from "@/lib/generated/prisma";
 import { revalidatePath } from "next/cache";
+
+const prisma = new PrismaClient();
 
 export async function createResume({
   resumeId,
@@ -18,12 +15,17 @@ export async function createResume({
   title: string;
 }) {
   try {
-    await connectToDB();
-
-    const newResume = await Resume.create({
-      resumeId,
-      userId,
-      title,
+    const newResume = await prisma.resume.create({
+      data: {
+        resumeId,
+        userId,
+        title,
+      },
+      include: {
+        experience: true,
+        education: true,
+        skills: true,
+      },
     });
 
     return { success: true, data: JSON.stringify(newResume) };
@@ -35,21 +37,14 @@ export async function createResume({
 
 export async function fetchResume(resumeId: string) {
   try {
-    await connectToDB();
-
-    const resume = await Resume.findOne({ resumeId: resumeId })
-      .populate({
-        path: "experience",
-        model: Experience,
-      })
-      .populate({
-        path: "education",
-        model: Education,
-      })
-      .populate({
-        path: "skills",
-        model: Skill,
-      });
+    const resume = await prisma.resume.findUnique({
+      where: { resumeId: resumeId },
+      include: {
+        experience: true,
+        education: true,
+        skills: true,
+      },
+    });
 
     return JSON.stringify(resume);
   } catch (error: any) {
@@ -63,9 +58,15 @@ export async function fetchUserResumes(userId: string) {
   }
 
   try {
-    await connectToDB();
-
-    const resumes = await Resume.find({ userId: userId });
+    const resumes = await prisma.resume.findMany({
+      where: { userId: userId },
+      include: {
+        experience: true,
+        education: true,
+        skills: true,
+      },
+      orderBy: { updatedAt: "desc" },
+    });
 
     return JSON.stringify(resumes);
   } catch (error: any) {
@@ -79,11 +80,11 @@ export async function checkResumeOwnership(userId: string, resumeId: string) {
   }
 
   try {
-    await connectToDB();
+    const resume = await prisma.resume.findUnique({
+      where: { resumeId: resumeId },
+    });
 
-    const resume = await Resume.findOne({ resumeId: resumeId, userId: userId });
-
-    return resume ? true : false;
+    return resume && resume.userId === userId ? true : false;
   } catch (error: any) {
     throw new Error(`Failed to check resume ownership: ${error.message}`);
   }
@@ -103,28 +104,27 @@ export async function updateResume({
     email: string;
     summary: string;
     themeColor: string;
+    title: string;
   }>;
 }) {
   try {
-    await connectToDB();
-
-    const resume = await Resume.findOne({ resumeId: resumeId });
+    const resume = await prisma.resume.findUnique({
+      where: { resumeId: resumeId },
+    });
 
     if (!resume) {
       return { success: false, error: "Resume not found" };
     }
 
-    Object.keys(updates).forEach((key) => {
-      const updateValue = updates[key as keyof typeof updates];
-
-      if (updateValue !== undefined) {
-        resume[key as keyof typeof updates] = updateValue;
-      }
+    const updatedResume = await prisma.resume.update({
+      where: { resumeId: resumeId },
+      data: updates,
+      include: {
+        experience: true,
+        education: true,
+        skills: true,
+      },
     });
-
-    resume.updatedAt = new Date();
-
-    const updatedResume = await resume.save();
 
     return { success: true, data: JSON.stringify(updatedResume) };
   } catch (error: any) {
@@ -138,35 +138,45 @@ export async function addExperienceToResume(
   experienceDataArray: any
 ) {
   try {
-    const resume = await Resume.findOne({ resumeId: resumeId });
+    const resume = await prisma.resume.findUnique({
+      where: { resumeId: resumeId },
+    });
 
     if (!resume) {
       throw new Error("Resume not found");
     }
 
+    // Eliminar experiencias previas del resumen
+    await prisma.experience.deleteMany({
+      where: { resumeId: resumeId },
+    });
+
+    // Crear nuevas experiencias
     const savedExperiences = await Promise.all(
-      experienceDataArray.map(async (experienceData: any) => {
-        if (experienceData._id) {
-          const existingExperience = await Experience.findById(
-            experienceData._id
-          );
-          if (existingExperience) {
-            return await Experience.findByIdAndUpdate(
-              experienceData._id,
-              experienceData,
-              { new: true }
-            );
-          }
-        }
-        const newExperience = new Experience(experienceData);
-        return await newExperience.save();
-      })
+      experienceDataArray.map((experienceData: any) =>
+        prisma.experience.create({
+          data: {
+            resumeId: resumeId,
+            title: experienceData.title || null,
+            companyName: experienceData.companyName || null,
+            city: experienceData.city || null,
+            state: experienceData.state || null,
+            startDate: experienceData.startDate || null,
+            endDate: experienceData.endDate || null,
+            workSummary: experienceData.workSummary || null,
+          },
+        })
+      )
     );
 
-    const experienceIds = savedExperiences.map((experience) => experience._id);
-    resume.experience = experienceIds;
-
-    const updatedResume = await resume.save();
+    const updatedResume = await prisma.resume.findUnique({
+      where: { resumeId: resumeId },
+      include: {
+        experience: true,
+        education: true,
+        skills: true,
+      },
+    });
 
     return { success: true, data: JSON.stringify(updatedResume) };
   } catch (error: any) {
@@ -180,33 +190,44 @@ export async function addEducationToResume(
   educationDataArray: any
 ) {
   try {
-    const resume = await Resume.findOne({ resumeId: resumeId });
+    const resume = await prisma.resume.findUnique({
+      where: { resumeId: resumeId },
+    });
 
     if (!resume) {
       throw new Error("Resume not found");
     }
 
+    // Eliminar educación previa del resumen
+    await prisma.education.deleteMany({
+      where: { resumeId: resumeId },
+    });
+
+    // Crear nueva educación
     const savedEducation = await Promise.all(
-      educationDataArray.map(async (educationData: any) => {
-        if (educationData._id) {
-          const existingEducation = await Education.findById(educationData._id);
-          if (existingEducation) {
-            return await Education.findByIdAndUpdate(
-              educationData._id,
-              educationData,
-              { new: true }
-            );
-          }
-        }
-        const newEducation = new Education(educationData);
-        return await newEducation.save();
-      })
+      educationDataArray.map((educationData: any) =>
+        prisma.education.create({
+          data: {
+            resumeId: resumeId,
+            universityName: educationData.universityName || null,
+            degree: educationData.degree || null,
+            major: educationData.major || null,
+            startDate: educationData.startDate || null,
+            endDate: educationData.endDate || null,
+            description: educationData.description || null,
+          },
+        })
+      )
     );
 
-    const educationIds = savedEducation.map((education) => education._id);
-    resume.education = educationIds;
-
-    const updatedResume = await resume.save();
+    const updatedResume = await prisma.resume.findUnique({
+      where: { resumeId: resumeId },
+      include: {
+        experience: true,
+        education: true,
+        skills: true,
+      },
+    });
 
     return { success: true, data: JSON.stringify(updatedResume) };
   } catch (error: any) {
@@ -220,31 +241,40 @@ export async function addSkillToResume(
   skillDataArray: any
 ) {
   try {
-    const resume = await Resume.findOne({ resumeId: resumeId });
+    const resume = await prisma.resume.findUnique({
+      where: { resumeId: resumeId },
+    });
 
     if (!resume) {
       throw new Error("Resume not found");
     }
 
+    // Eliminar skills previas del resumen
+    await prisma.skill.deleteMany({
+      where: { resumeId: resumeId },
+    });
+
+    // Crear nuevas skills
     const savedSkills = await Promise.all(
-      skillDataArray.map(async (skillData: any) => {
-        if (skillData._id) {
-          const existingSkill = await Skill.findById(skillData._id);
-          if (existingSkill) {
-            return await Skill.findByIdAndUpdate(skillData._id, skillData, {
-              new: true,
-            });
-          }
-        }
-        const newSkill = new Skill(skillData);
-        return await newSkill.save();
-      })
+      skillDataArray.map((skillData: any) =>
+        prisma.skill.create({
+          data: {
+            resumeId: resumeId,
+            name: skillData.name || null,
+            rating: skillData.rating || null,
+          },
+        })
+      )
     );
 
-    const skillIds = savedSkills.map((skill) => skill._id);
-    resume.skills = skillIds;
-
-    const updatedResume = await resume.save();
+    const updatedResume = await prisma.resume.findUnique({
+      where: { resumeId: resumeId },
+      include: {
+        experience: true,
+        education: true,
+        skills: true,
+      },
+    });
 
     return { success: true, data: JSON.stringify(updatedResume) };
   } catch (error: any) {
@@ -255,9 +285,10 @@ export async function addSkillToResume(
 
 export async function deleteResume(resumeId: string, path: string) {
   try {
-    await connectToDB();
-
-    await Resume.findOneAndDelete({ resumeId: resumeId });
+    // Eliminar todas las experiencias, educación y skills asociadas (cascada)
+    await prisma.resume.delete({
+      where: { resumeId: resumeId },
+    });
 
     revalidatePath(path);
 

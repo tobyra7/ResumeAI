@@ -1,0 +1,82 @@
+// Prisma schema for ResumeAI with Supabase (PostgreSQL)
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Resume {
+  id        String   @id @default(cuid())
+  resumeId  String   @unique
+  userId    String
+  title     String
+  firstName String?
+  lastName  String?
+  jobTitle  String?
+  address   String?
+  phone     String?
+  email     String?
+  summary   String?
+  themeColor String   @default("rgb(79, 70, 229)")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  experience Experience[]
+  education  Education[]
+  skills     Skill[]
+
+  @@index([userId])
+}
+
+model Experience {
+  id           String   @id @default(cuid())
+  resumeId     String
+  title        String?
+  companyName  String?
+  city         String?
+  state        String?
+  startDate    String?
+  endDate      String?
+  workSummary  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  resume Resume @relation(fields: [resumeId], references: [resumeId], onDelete: Cascade)
+
+  @@index([resumeId])
+}
+
+model Education {
+  id             String   @id @default(cuid())
+  resumeId       String
+  universityName String?
+  degree         String?
+  major          String?
+  startDate      String?
+  endDate        String?
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  resume Resume @relation(fields: [resumeId], references: [resumeId], onDelete: Cascade)
+
+  @@index([resumeId])
+}
+
+model Skill {
+  id        String   @id @default(cuid())
+  resumeId  String
+  name      String?
+  rating    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  resume Resume @relation(fields: [resumeId], references: [resumeId], onDelete: Cascade)
+
+  @@index([resumeId])
+}
