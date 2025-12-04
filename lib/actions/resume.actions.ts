@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { v4 as uuidv4 } from "uuid";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -49,10 +50,11 @@ export async function createResume({
   title: string;
 }) {
   try {
+    const id = uuidv4();
     const created = await supabaseFetch(`Resume`, {
       method: 'POST',
       headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({ resumeId, userId, title }),
+      body: JSON.stringify({ id, resumeId, userId, title }),
     });
 
     return { success: true, data: JSON.stringify(created[0]) };
@@ -145,6 +147,7 @@ export async function addExperienceToResume(
 
     // insert new experiences (bulk)
     const mapped = experienceDataArray.map((exp: any) => ({
+      id: uuidv4(),
       resumeId,
       jobTitle: exp.title || null,
       companyName: exp.companyName || null,
@@ -180,6 +183,7 @@ export async function addEducationToResume(
     await supabaseFetch(`Education?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
     const mapped = educationDataArray.map((edu: any) => ({
+      id: uuidv4(),
       resumeId,
       schoolName: edu.universityName || null,
       degree: edu.degree || null,
@@ -216,6 +220,7 @@ export async function addSkillToResume(
     await supabaseFetch(`Skill?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
     const mapped = skillDataArray.map((s: any) => ({
+      id: uuidv4(),
       resumeId,
       skillName: s.name || null,
       proficiency: s.rating || null,
