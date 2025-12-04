@@ -3,7 +3,7 @@
 import { PrismaClient } from "../generated/prisma/client";
 import { revalidatePath } from "next/cache";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 export async function createResume({
   resumeId,
