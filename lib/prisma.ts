@@ -1,10 +1,20 @@
 import { PrismaClient } from "./generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+import dns from "node:dns";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 const prismaClientSingleton = () => {
+  // Prefer IPv4 address resolution to avoid ENETUNREACH on IPv6-only routes
+  try {
+    if (typeof dns.setDefaultResultOrder === "function") {
+      dns.setDefaultResultOrder("ipv4first");
+    }
+  } catch (e) {
+    // ignore if not supported
+  }
+
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     // Ensure SSL for Supabase connections from serverless environments
