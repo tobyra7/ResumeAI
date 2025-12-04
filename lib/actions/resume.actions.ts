@@ -1,15 +1,9 @@
 "use server";
 
-import { PrismaClient } from "../generated/prisma/client";
 import { revalidatePath } from "next/cache";
-
-let prisma: InstanceType<typeof PrismaClient> | null = null;
+import { prisma } from "../prisma";
 
 function getPrisma() {
-  if (!prisma) {
-    // @ts-ignore - Prisma type issue
-    prisma = new PrismaClient({});
-  }
   return prisma;
 }
 

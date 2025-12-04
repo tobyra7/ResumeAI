@@ -4,9 +4,9 @@
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
-  engineType = "library"
-}
 
+  previewFeatures = ["driverAdapters"]
+}
 datasource db {
   provider = "postgresql"
 }
