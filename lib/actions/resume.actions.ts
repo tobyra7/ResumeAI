@@ -1,10 +1,42 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "../prisma";
 
-function getPrisma() {
-  return prisma;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+function supabaseHeaders() {
+  if (!SERVICE_ROLE) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY not configured in environment");
+  }
+  return {
+    "Content-Type": "application/json",
+    apikey: SERVICE_ROLE,
+    Authorization: `Bearer ${SERVICE_ROLE}`,
+  };
+}
+
+async function supabaseFetch(path: string, options: RequestInit = {}) {
+  if (!SUPABASE_URL) throw new Error("NEXT_PUBLIC_SUPABASE_URL not configured");
+  const url = `${SUPABASE_URL.replace(/\/+$/,'')}/rest/v1/${path}`;
+  const headers = {
+    ...(options.headers || {}),
+    ...supabaseHeaders(),
+  } as Record<string,string>;
+
+  const res = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase request failed: ${res.status} ${text}`);
+  }
+
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) return res.json();
+  return res.text();
 }
 
 export async function createResume({
@@ -17,20 +49,13 @@ export async function createResume({
   title: string;
 }) {
   try {
-    const newResume = await getPrisma().resume.create({
-      data: {
-        resumeId,
-        userId,
-        title,
-      },
-      include: {
-        experience: true,
-        education: true,
-        skills: true,
-      },
+    const created = await supabaseFetch(`Resume`, {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ resumeId, userId, title }),
     });
 
-    return { success: true, data: JSON.stringify(newResume) };
+    return { success: true, data: JSON.stringify(created[0]) };
   } catch (error: any) {
     console.error(`Failed to create resume: ${error.message}`);
     return { success: false, error: error.message };
@@ -39,16 +64,9 @@ export async function createResume({
 
 export async function fetchResume(resumeId: string) {
   try {
-    const resume = await getPrisma().resume.findUnique({
-      where: { resumeId: resumeId },
-      include: {
-        experience: true,
-        education: true,
-        skills: true,
-      },
-    });
-
-    return JSON.stringify(resume);
+    const select = encodeURIComponent('*,experience(*),education(*),skills(*)');
+    const rows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${select}`);
+    return JSON.stringify(rows[0] ?? null);
   } catch (error: any) {
     throw new Error(`Failed to fetch resume: ${error.message}`);
   }
@@ -60,17 +78,9 @@ export async function fetchUserResumes(userId: string) {
   }
 
   try {
-    const resumes = await getPrisma().resume.findMany({
-      where: { userId: userId },
-      include: {
-        experience: true,
-        education: true,
-        skills: true,
-      },
-      orderBy: { updatedAt: "desc" },
-    });
-
-    return JSON.stringify(resumes);
+    const select = encodeURIComponent('*,experience(*),education(*),skills(*)');
+    const rows = await supabaseFetch(`Resume?userId=eq.${userId}&select=${select}&order=updatedAt.desc`);
+    return JSON.stringify(rows || []);
   } catch (error: any) {
     throw new Error(`Failed to fetch user resumes: ${error.message}`);
   }
@@ -82,11 +92,9 @@ export async function checkResumeOwnership(userId: string, resumeId: string) {
   }
 
   try {
-    const resume = await getPrisma().resume.findUnique({
-      where: { resumeId: resumeId },
-    });
-
-    return resume && resume.userId === userId ? true : false;
+    const rows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=userId`);
+    const row = rows && rows[0];
+    return !!(row && row.userId === userId);
   } catch (error: any) {
     throw new Error(`Failed to check resume ownership: ${error.message}`);
   }
@@ -110,25 +118,13 @@ export async function updateResume({
   }>;
 }) {
   try {
-    const resume = await getPrisma().resume.findUnique({
-      where: { resumeId: resumeId },
+    // patch the resume
+    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify(updates),
     });
-
-    if (!resume) {
-      return { success: false, error: "Resume not found" };
-    }
-
-    const updatedResume = await getPrisma().resume.update({
-      where: { resumeId: resumeId },
-      data: updates,
-      include: {
-        experience: true,
-        education: true,
-        skills: true,
-      },
-    });
-
-    return { success: true, data: JSON.stringify(updatedResume) };
+    return { success: true, data: JSON.stringify(updated[0]) };
   } catch (error: any) {
     console.error(`Failed to update resume: ${error.message}`);
     return { success: false, error: error.message };
@@ -140,47 +136,33 @@ export async function addExperienceToResume(
   experienceDataArray: any
 ) {
   try {
-    const resume = await getPrisma().resume.findUnique({
-      where: { resumeId: resumeId },
-    });
+    // verify resume exists
+    const resumeRows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=id`);
+    if (!resumeRows || resumeRows.length === 0) throw new Error('Resume not found');
 
-    if (!resume) {
-      throw new Error("Resume not found");
+    // delete existing experiences
+    await supabaseFetch(`Experience?resumeId=eq.${resumeId}`, { method: 'DELETE' });
+
+    // insert new experiences (bulk)
+    const mapped = experienceDataArray.map((exp: any) => ({
+      resumeId,
+      jobTitle: exp.title || null,
+      companyName: exp.companyName || null,
+      startDate: exp.startDate || null,
+      endDate: exp.endDate || null,
+      description: exp.workSummary || null,
+    }));
+
+    if (mapped.length > 0) {
+      await supabaseFetch('Experience', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(mapped),
+      });
     }
 
-    // Eliminar experiencias previas del resumen
-    await getPrisma().experience.deleteMany({
-      where: { resumeId: resumeId },
-    });
-
-    // Crear nuevas experiencias
-    const savedExperiences = await Promise.all(
-      experienceDataArray.map((experienceData: any) =>
-        getPrisma().experience.create({
-          data: {
-            resumeId: resumeId,
-            title: experienceData.title || null,
-            companyName: experienceData.companyName || null,
-            city: experienceData.city || null,
-            state: experienceData.state || null,
-            startDate: experienceData.startDate || null,
-            endDate: experienceData.endDate || null,
-            workSummary: experienceData.workSummary || null,
-          },
-        })
-      )
-    );
-
-    const updatedResume = await getPrisma().resume.findUnique({
-      where: { resumeId: resumeId },
-      include: {
-        experience: true,
-        education: true,
-        skills: true,
-      },
-    });
-
-    return { success: true, data: JSON.stringify(updatedResume) };
+    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,experience(*),education(*),skills(*)')}`);
+    return { success: true, data: JSON.stringify(updated[0] ?? null) };
   } catch (error: any) {
     console.error("Error adding or updating experience to resume: ", error);
     return { success: false, error: error?.message };
@@ -192,46 +174,31 @@ export async function addEducationToResume(
   educationDataArray: any
 ) {
   try {
-    const resume = await getPrisma().resume.findUnique({
-      where: { resumeId: resumeId },
-    });
+    const resumeRows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=id`);
+    if (!resumeRows || resumeRows.length === 0) throw new Error('Resume not found');
 
-    if (!resume) {
-      throw new Error("Resume not found");
+    await supabaseFetch(`Education?resumeId=eq.${resumeId}`, { method: 'DELETE' });
+
+    const mapped = educationDataArray.map((edu: any) => ({
+      resumeId,
+      schoolName: edu.universityName || null,
+      degree: edu.degree || null,
+      fieldOfStudy: edu.major || null,
+      startDate: edu.startDate || null,
+      endDate: edu.endDate || null,
+      description: edu.description || null,
+    }));
+
+    if (mapped.length > 0) {
+      await supabaseFetch('Education', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(mapped),
+      });
     }
 
-    // Eliminar educación previa del resumen
-    await getPrisma().education.deleteMany({
-      where: { resumeId: resumeId },
-    });
-
-    // Crear nueva educación
-    const savedEducation = await Promise.all(
-      educationDataArray.map((educationData: any) =>
-        getPrisma().education.create({
-          data: {
-            resumeId: resumeId,
-            universityName: educationData.universityName || null,
-            degree: educationData.degree || null,
-            major: educationData.major || null,
-            startDate: educationData.startDate || null,
-            endDate: educationData.endDate || null,
-            description: educationData.description || null,
-          },
-        })
-      )
-    );
-
-    const updatedResume = await getPrisma().resume.findUnique({
-      where: { resumeId: resumeId },
-      include: {
-        experience: true,
-        education: true,
-        skills: true,
-      },
-    });
-
-    return { success: true, data: JSON.stringify(updatedResume) };
+    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,experience(*),education(*),skills(*)')}`);
+    return { success: true, data: JSON.stringify(updated[0] ?? null) };
   } catch (error: any) {
     console.error("Error adding or updating education to resume: ", error);
     return { success: false, error: error?.message };
@@ -243,42 +210,27 @@ export async function addSkillToResume(
   skillDataArray: any
 ) {
   try {
-    const resume = await getPrisma().resume.findUnique({
-      where: { resumeId: resumeId },
-    });
+    const resumeRows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=id`);
+    if (!resumeRows || resumeRows.length === 0) throw new Error('Resume not found');
 
-    if (!resume) {
-      throw new Error("Resume not found");
+    await supabaseFetch(`Skill?resumeId=eq.${resumeId}`, { method: 'DELETE' });
+
+    const mapped = skillDataArray.map((s: any) => ({
+      resumeId,
+      skillName: s.name || null,
+      proficiency: s.rating || null,
+    }));
+
+    if (mapped.length > 0) {
+      await supabaseFetch('Skill', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(mapped),
+      });
     }
 
-    // Eliminar skills previas del resumen
-    await getPrisma().skill.deleteMany({
-      where: { resumeId: resumeId },
-    });
-
-    // Crear nuevas skills
-    const savedSkills = await Promise.all(
-      skillDataArray.map((skillData: any) =>
-        getPrisma().skill.create({
-          data: {
-            resumeId: resumeId,
-            name: skillData.name || null,
-            rating: skillData.rating || null,
-          },
-        })
-      )
-    );
-
-    const updatedResume = await getPrisma().resume.findUnique({
-      where: { resumeId: resumeId },
-      include: {
-        experience: true,
-        education: true,
-        skills: true,
-      },
-    });
-
-    return { success: true, data: JSON.stringify(updatedResume) };
+    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,experience(*),education(*),skills(*)')}`);
+    return { success: true, data: JSON.stringify(updated[0] ?? null) };
   } catch (error: any) {
     console.error("Error adding or updating skill to resume: ", error);
     return { success: false, error: error?.message };
@@ -288,9 +240,7 @@ export async function addSkillToResume(
 export async function deleteResume(resumeId: string, path: string) {
   try {
     // Eliminar todas las experiencias, educación y skills asociadas (cascada)
-    await getPrisma().resume.delete({
-      where: { resumeId: resumeId },
-    });
+    await supabaseFetch(`Resume?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
     revalidatePath(path);
 
