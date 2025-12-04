@@ -51,10 +51,11 @@ export async function createResume({
 }) {
   try {
     const id = uuidv4();
+    const now = new Date().toISOString();
     const created = await supabaseFetch(`Resume`, {
       method: 'POST',
       headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({ id, resumeId, userId, title }),
+      body: JSON.stringify({ id, resumeId, userId, title, createdAt: now, updatedAt: now }),
     });
 
     return { success: true, data: JSON.stringify(created[0]) };
@@ -146,6 +147,7 @@ export async function addExperienceToResume(
     await supabaseFetch(`Experience?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
     // insert new experiences (bulk)
+    const now = new Date().toISOString();
     const mapped = experienceDataArray.map((exp: any) => ({
       id: uuidv4(),
       resumeId,
@@ -154,6 +156,8 @@ export async function addExperienceToResume(
       startDate: exp.startDate || null,
       endDate: exp.endDate || null,
       description: exp.workSummary || null,
+      createdAt: now,
+      updatedAt: now,
     }));
 
     if (mapped.length > 0) {
@@ -182,6 +186,7 @@ export async function addEducationToResume(
 
     await supabaseFetch(`Education?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
+    const now = new Date().toISOString();
     const mapped = educationDataArray.map((edu: any) => ({
       id: uuidv4(),
       resumeId,
@@ -191,6 +196,8 @@ export async function addEducationToResume(
       startDate: edu.startDate || null,
       endDate: edu.endDate || null,
       description: edu.description || null,
+      createdAt: now,
+      updatedAt: now,
     }));
 
     if (mapped.length > 0) {
@@ -219,11 +226,14 @@ export async function addSkillToResume(
 
     await supabaseFetch(`Skill?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
+    const now = new Date().toISOString();
     const mapped = skillDataArray.map((s: any) => ({
       id: uuidv4(),
       resumeId,
       skillName: s.name || null,
       proficiency: s.rating || null,
+      createdAt: now,
+      updatedAt: now,
     }));
 
     if (mapped.length > 0) {
