@@ -13,7 +13,7 @@ const SkillsPreview = () => {
           color: formData?.themeColor || themeColors[0],
         }}
       >
-        Skill{formData?.skills.length > 1 ? "s" : ""}
+        Skill{formData?.Skill?.length > 1 ? "s" : ""}
       </h2>
       <hr
         style={{
@@ -22,7 +22,7 @@ const SkillsPreview = () => {
       />
 
       <div className="grid grid-cols-2 gap-x-16 max-sm:gap-x-6 max-md:gap-x-10 gap-y-3 my-5">
-        {formData?.skills.map((skill: any, index: number) => (
+        {formData?.Skill?.map((skill: any, index: number) => (
           <div
             key={index}
             className="grid grid-cols-3 items-center justify-between gap-3"

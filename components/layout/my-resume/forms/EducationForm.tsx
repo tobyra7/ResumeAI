@@ -38,9 +38,9 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
     resolver: zodResolver(EducationValidationSchema),
     mode: "onChange",
     defaultValues: {
-      education:
-        formData?.education?.length > 0
-          ? formData.education
+      Education:
+        formData?.Education?.length > 0
+          ? formData.Education
           : [
               {
                 universityName: "",
@@ -56,7 +56,7 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "education",
+    name: "Education",
   });
 
   const handleChange = (
@@ -66,7 +66,7 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
       | { target: { name: string; value: string } }
   ) => {
     const { name, value } = event.target;
-    const newEntries = form.getValues("education").slice();
+    const newEntries = form.getValues("Education").slice();
     newEntries[index] = { ...newEntries[index], [name]: value };
     handleInputChange({
       target: {
@@ -86,7 +86,7 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
       description: "",
     };
     append(newEntry);
-    const newEntries = [...form.getValues("education"), newEntry];
+    const newEntries = [...form.getValues("Education"), newEntry];
     handleInputChange({
       target: {
         name: "education",
@@ -97,7 +97,7 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
 
   const RemoveEducation = (index: number) => {
     remove(index);
-    const newEntries = form.getValues("education");
+    const newEntries = form.getValues("Education");
     if (currentAiIndex >= newEntries.length) {
       setCurrentAiIndex(newEntries.length - 1 >= 0 ? newEntries.length - 1 : 0);
     }
@@ -110,7 +110,7 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
   };
 
   const generateEducationDescriptionFromAI = async (index: number) => {
-    const education = form.getValues("education")[index];
+    const education = form.getValues("Education")[index];
     if (!education.universityName || !education.degree || !education.major) {
       toast({
         title: "Uh Oh! Something went wrong.",
@@ -143,7 +143,7 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
   const onSave = async (data: z.infer<typeof EducationValidationSchema>) => {
     setIsLoading(true);
 
-    const result = await addEducationToResume(params.id, data.education);
+    const result = await addEducationToResume(params.id, data.Education);
 
     if (result.success) {
       toast({
@@ -153,8 +153,8 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
       });
       handleInputChange({
         target: {
-          name: "education",
-          value: data.education,
+          name: "Education",
+          value: data.Education,
         },
       });
     } else {
@@ -190,7 +190,7 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
                   <FormField
                     key={config.name}
                     control={form.control}
-                    name={`education.${index}.${config.name}`}
+                    name={`Education.${index}.${config.name}`}
                     render={({ field }) => (
                       <FormItem className={config.colSpan || ""}>
                         {config.type === "textarea" ? (
@@ -231,7 +231,7 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
                               }}
                               defaultValue={(field.value as string) || ""}
                               className={`no-focus ${
-                                form.formState.errors.education?.[index]?.[
+                                form.formState.errors.Education?.[index]?.[
                                   config.name
                                 ]
                                   ? "error"
@@ -245,7 +245,7 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
                               {...field}
                               value={field.value as string}
                               className={`no-focus ${
-                                form.formState.errors.education?.[index]?.[
+                                form.formState.errors.Education?.[index]?.[
                                   config.name
                                 ]
                                   ? "error"
@@ -310,14 +310,14 @@ const EducationForm = ({ params }: { params: { id: string } }) => {
               key={index}
               onClick={() => {
                 form.setValue(
-                  `education.${currentAiIndex}.description`,
+                  `Education.${currentAiIndex}.description`,
                   item?.description,
                   { shouldValidate: true }
                 );
                 handleInputChange({
                   target: {
-                    name: "education",
-                    value: form.getValues("education"),
+                    name: "Education",
+                    value: form.getValues("Education"),
                   },
                 });
               }}

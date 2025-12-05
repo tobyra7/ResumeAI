@@ -21,7 +21,7 @@ const EducationalPreview = () => {
         }}
       />
 
-      {formData?.education.map((education: any, index: number) => (
+      {formData?.Education.map((education: any, index: number) => (
         <div key={index} className="my-5">
           <h2
             className="text-sm font-bold"

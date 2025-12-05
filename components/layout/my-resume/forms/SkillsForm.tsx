@@ -31,9 +31,9 @@ const SkillsForm = ({ params }: { params: { id: string } }) => {
     resolver: zodResolver(SkillValidationSchema),
     mode: "onChange",
     defaultValues: {
-      skills:
-        formData?.skills?.length > 0
-          ? formData.skills
+      Skill:
+        formData?.Skill?.length > 0
+          ? formData.Skill
           : [
               {
                 name: "",
@@ -45,7 +45,7 @@ const SkillsForm = ({ params }: { params: { id: string } }) => {
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "skills",
+    name: "Skill",
   });
 
   const handleChange = (
@@ -53,22 +53,22 @@ const SkillsForm = ({ params }: { params: { id: string } }) => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = event.target;
-    const newEntries = form.getValues("skills").slice();
+    const newEntries = form.getValues("Skill").slice();
     newEntries[index] = { ...newEntries[index], [name]: value };
     handleInputChange({
       target: {
-        name: "skills",
+        name: "Skill",
         value: newEntries,
       },
     });
   };
 
   const handleRatingChange = (index: number, value: number) => {
-    const newEntries = form.getValues("skills").slice();
+    const newEntries = form.getValues("Skill").slice();
     newEntries[index] = { ...newEntries[index], rating: value };
     handleInputChange({
       target: {
-        name: "skills",
+        name: "Skill",
         value: newEntries,
       },
     });
@@ -77,7 +77,7 @@ const SkillsForm = ({ params }: { params: { id: string } }) => {
   const onSave = async () => {
     setIsLoading(true);
 
-    const skillsData = form.getValues("skills");
+    const skillsData = form.getValues("Skill");
     const result = await addSkillToResume(params.id, skillsData);
 
     if (result.success) {
@@ -88,7 +88,7 @@ const SkillsForm = ({ params }: { params: { id: string } }) => {
       });
       handleInputChange({
         target: {
-          name: "skills",
+          name: "Skill",
           value: skillsData,
         },
       });
@@ -119,14 +119,14 @@ const SkillsForm = ({ params }: { params: { id: string } }) => {
             <div
               key={item.id}
               className={`flex max-lg:flex-col ${
-                form.formState.errors.skills?.[index]?.name
+                form.formState.errors.Skill?.[index]?.name
                   ? "lg:items-center"
                   : "lg:items-end"
               } justify-between mb-2 border rounded-lg p-3 space-y-2 lg:space-x-12`}
             >
               <FormField
                 control={form.control}
-                name={`skills.${index}.name`}
+                name={`Skill.${index}.name`}
                 render={({ field }) => (
                   <FormItem className="space-y-2 w-full">
                     <FormLabel className="text-slate-700 font-semibold text-md">
@@ -135,7 +135,7 @@ const SkillsForm = ({ params }: { params: { id: string } }) => {
                     <FormControl>
                       <Input
                         className={`no-focus ${
-                          form.formState.errors.skills?.[index]?.name
+                          form.formState.errors.Skill?.[index]?.name
                             ? "error"
                             : ""
                         }`}
@@ -152,7 +152,7 @@ const SkillsForm = ({ params }: { params: { id: string } }) => {
               />
               <FormField
                 control={form.control}
-                name={`skills.${index}.rating`}
+                name={`Skill.${index}.rating`}
                 render={({ field }) => (
                   <Rating
                     style={{ maxWidth: 160, height: 46 }}

@@ -21,7 +21,7 @@ const ExperiencePreview = () => {
         }}
       />
 
-      {formData?.experience?.map((experience: any, index: number) => (
+      {formData?.Experience?.map((experience: any, index: number) => (
         <div key={index} className="my-5">
           <h2
             className="text-sm font-bold"
@@ -29,7 +29,7 @@ const ExperiencePreview = () => {
               color: formData?.themeColor || themeColors[0],
             }}
           >
-            {experience?.title}
+            {experience.title}
           </h2>
           <h2 className="text-xs flex justify-between">
             {experience?.companyName}

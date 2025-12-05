@@ -15,7 +15,7 @@ export const personalDetailFields = [
 
 type Experience = z.infer<
   typeof ExperienceValidationSchema
->["experience"][number];
+>["Experience"][number];
 
 interface ExperienceFields {
   name: keyof Experience;
@@ -39,7 +39,7 @@ export const experienceFields: ExperienceFields[] = [
   },
 ];
 
-type Education = z.infer<typeof EducationValidationSchema>["education"][number];
+type Education = z.infer<typeof EducationValidationSchema>["Education"][number];
 
 interface EducationField {
   name: keyof Education;

@@ -38,9 +38,9 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
     resolver: zodResolver(ExperienceValidationSchema),
     mode: "onChange",
     defaultValues: {
-      experience:
-        formData?.experience?.length > 0
-          ? formData.experience
+      Experience:
+        formData?.Experience?.length > 0
+          ? formData.Experience
           : [
               {
                 title: "",
@@ -57,7 +57,7 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "experience",
+    name: "Experience",
   });
 
   const handleChange = (
@@ -67,11 +67,11 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
       | { target: { name: string; value: string } }
   ) => {
     const { name, value } = event.target;
-    const newEntries = form.getValues("experience").slice();
+    const newEntries = form.getValues("Experience").slice();
     newEntries[index] = { ...newEntries[index], [name]: value };
     handleInputChange({
       target: {
-        name: "experience",
+        name: "Experience",
         value: newEntries,
       },
     });
@@ -88,7 +88,7 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
       workSummary: "",
     };
     append(newEntry);
-    const newEntries = [...form.getValues("experience"), newEntry];
+    const newEntries = [...form.getValues("Experience"), newEntry];
     handleInputChange({
       target: {
         name: "experience",
@@ -99,20 +99,20 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
 
   const RemoveExperience = (index: number) => {
     remove(index);
-    const newEntries = form.getValues("experience");
+    const newEntries = form.getValues("Experience");
     if (currentAiIndex >= newEntries.length) {
       setCurrentAiIndex(newEntries.length - 1 >= 0 ? newEntries.length - 1 : 0);
     }
     handleInputChange({
       target: {
-        name: "experience",
+        name: "Experience",
         value: newEntries,
       },
     });
   };
 
   const generateExperienceDescriptionFromAI = async (index: number) => {
-    const experience = form.getValues("experience")[index];
+    const experience = form.getValues("Experience")[index];
     if (!experience.title || !experience.companyName) {
       toast({
         title: "Uh Oh! Something went wrong.",
@@ -143,7 +143,7 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
 
   const onSave = async (data: z.infer<typeof ExperienceValidationSchema>) => {
     setIsLoading(true);
-    const result = await addExperienceToResume(params.id, data.experience);
+    const result = await addExperienceToResume(params.id, data.Experience);
 
     if (result.success) {
       toast({
@@ -153,8 +153,8 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
       });
       handleInputChange({
         target: {
-          name: "experience",
-          value: data.experience,
+          name: "Experience",
+          value: data.Experience,
         },
       });
     } else {
@@ -189,7 +189,7 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
                   <FormField
                     key={config.name}
                     control={form.control}
-                    name={`experience.${index}.${config.name}`}
+                    name={`Experience.${index}.${config.name}`}
                     render={({ field }) => (
                       <FormItem className={config.colSpan || ""}>
                         {config.type === "richText" ? (
@@ -235,7 +235,7 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
                               {...field}
                               value={field.value as string}
                               className={`no-focus ${
-                                form.formState.errors.experience?.[index]?.[
+                                form.formState.errors.Experience?.[index]?.[
                                   config.name
                                 ]
                                   ? "error"
@@ -300,14 +300,14 @@ const ExperienceForm = ({ params }: { params: { id: string } }) => {
               key={index}
               onClick={() => {
                 form.setValue(
-                  `experience.${currentAiIndex}.workSummary`,
+                  `Experience.${currentAiIndex}.workSummary`,
                   item?.description,
                   { shouldValidate: true }
                 );
                 handleInputChange({
                   target: {
-                    name: "experience",
-                    value: form.getValues("experience"),
+                    name: "Experience",
+                    value: form.getValues("Experience"),
                   },
                 });
               }}

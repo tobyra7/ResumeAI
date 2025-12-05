@@ -97,7 +97,7 @@ export const SummaryValidationSchema = z.object({
 });
 
 export const ExperienceValidationSchema = z.object({
-  experience: z.array(
+  Experience: z.array(
     z
       .object({
         title,
@@ -126,7 +126,7 @@ export const ExperienceValidationSchema = z.object({
 });
 
 export const EducationValidationSchema = z.object({
-  education: z.array(
+  Education: z.array(
     z
       .object({
         universityName,
@@ -154,7 +154,7 @@ export const EducationValidationSchema = z.object({
 });
 
 export const SkillValidationSchema = z.object({
-  skills: z.array(
+  Skill: z.array(
     z.object({
       name,
       rating,
