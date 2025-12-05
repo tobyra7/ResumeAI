@@ -57,16 +57,26 @@ const SummaryForm = ({ params }: { params: { id: string } }) => {
 
   const generateSummaryFromAI = async () => {
     setIsAiLoading(true);
-    const result = await generateSummary(formData?.jobTitle);
-    setAiGeneratedSummaryList(result);
-    setIsAiLoading(false);
+    try {
+      const result = await generateSummary(formData?.jobTitle);
+      setAiGeneratedSummaryList(result);
 
-    setTimeout(() => {
-      listRef?.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+      setTimeout(() => {
+        listRef?.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+    } catch (error: any) {
+      toast({
+        title: "AI Generation Failed",
+        description: error.message || "Could not generate summary. Please try again.",
+        variant: "destructive",
+        className: "bg-white",
       });
-    }, 100);
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const onSave = async (data: z.infer<typeof SummaryValidationSchema>) => {
