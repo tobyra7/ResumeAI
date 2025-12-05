@@ -167,6 +167,17 @@ export async function addExperienceToResume(
     const resumeRows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=id`);
     if (!resumeRows || resumeRows.length === 0) throw new Error('Resume not found');
 
+    // Only delete and update if we have data to insert
+    // This prevents accidental data loss from empty arrays
+    if (!experienceDataArray || experienceDataArray.length === 0) {
+      // Just return current state without deleting
+      const current = await supabaseFetch(
+        `Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`
+      );
+      const frontendResume = mapResumeFromDB(current[0] as DBResume);
+      return { success: true, data: JSON.stringify(frontendResume) };
+    }
+
     // delete existing experiences
     await supabaseFetch(`Experience?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
@@ -210,6 +221,15 @@ export async function addEducationToResume(
     const resumeRows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=id`);
     if (!resumeRows || resumeRows.length === 0) throw new Error('Resume not found');
 
+    // Only delete and update if we have data to insert
+    if (!educationDataArray || educationDataArray.length === 0) {
+      const current = await supabaseFetch(
+        `Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`
+      );
+      const frontendResume = mapResumeFromDB(current[0] as DBResume);
+      return { success: true, data: JSON.stringify(frontendResume) };
+    }
+
     await supabaseFetch(`Education?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
     // Use mapper to convert frontend format to DB format
@@ -251,6 +271,15 @@ export async function addSkillToResume(
   try {
     const resumeRows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=id`);
     if (!resumeRows || resumeRows.length === 0) throw new Error('Resume not found');
+
+    // Only delete and update if we have data to insert
+    if (!skillDataArray || skillDataArray.length === 0) {
+      const current = await supabaseFetch(
+        `Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`
+      );
+      const frontendResume = mapResumeFromDB(current[0] as DBResume);
+      return { success: true, data: JSON.stringify(frontendResume) };
+    }
 
     await supabaseFetch(`Skill?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 

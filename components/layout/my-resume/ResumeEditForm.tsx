@@ -68,9 +68,9 @@ const ResumeEditForm = ({
                   phone: formData?.phone,
                   email: formData?.email,
                   summary: formData?.summary,
-                  experience: formData?.experience,
-                  education: formData?.education,
-                  skills: formData?.skills,
+                  Experience: formData?.Experience || [],
+                  Education: formData?.Education || [],
+                  Skill: formData?.Skill || [],
                 };
 
                 const updateResult = await updateResume({
@@ -88,17 +88,17 @@ const ResumeEditForm = ({
 
                 const experienceResult = await addExperienceToResume(
                   params.id,
-                  updates.experience
+                  updates.Experience
                 );
 
                 const educationResult = await addEducationToResume(
                   params.id,
-                  updates.education
+                  updates.Education
                 );
 
                 const skillsResult = await addSkillToResume(
                   params.id,
-                  updates.skills
+                  updates.Skill
                 );
 
                 setIsLoading(false);
