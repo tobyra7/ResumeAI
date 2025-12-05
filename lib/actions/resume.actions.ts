@@ -2,6 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
+import {
+  mapResumeFromDB,
+  mapExperienceToDB,
+  mapEducationToDB,
+  mapSkillToDB,
+  type FrontendExperience,
+  type FrontendEducation,
+  type FrontendSkill,
+  type DBResume,
+} from "@/lib/mappers/resume.mappers";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -69,36 +79,15 @@ export async function fetchResume(resumeId: string) {
   try {
     const select = encodeURIComponent('*,Experience(*),Education(*),Skill(*)');
     const rows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${select}`);
-    const resume = rows[0] ?? null;
+    const dbResume = rows[0] as DBResume | undefined;
     
-    if (resume) {
-      // Map DB column names to frontend field names
-      if (resume.Experience) {
-        resume.Experience = resume.Experience.map((exp: any) => ({
-          ...exp,
-          title: exp.jobTitle,
-          workSummary: exp.description,
-        }));
-      }
-      
-      if (resume.Education) {
-        resume.Education = resume.Education.map((edu: any) => ({
-          ...edu,
-          universityName: edu.schoolName,
-          major: edu.fieldOfStudy,
-        }));
-      }
-      
-      if (resume.Skill) {
-        resume.Skill = resume.Skill.map((skill: any) => ({
-          ...skill,
-          name: skill.skillName,
-          rating: skill.proficiency,
-        }));
-      }
+    if (!dbResume) {
+      return JSON.stringify(null);
     }
     
-    return JSON.stringify(resume);
+    // Use centralized mapper to convert DB format to Frontend format
+    const frontendResume = mapResumeFromDB(dbResume);
+    return JSON.stringify(frontendResume);
   } catch (error: any) {
     throw new Error(`Failed to fetch resume: ${error.message}`);
   }
@@ -113,34 +102,10 @@ export async function fetchUserResumes(userId: string) {
     const select = encodeURIComponent('*,Experience(*),Education(*),Skill(*)');
     const rows = await supabaseFetch(`Resume?userId=eq.${userId}&select=${select}&order=updatedAt.desc`);
     
-    // Map DB column names to frontend field names for each resume
-    const mappedResumes = (rows || []).map((resume: any) => {
-      if (resume.Experience) {
-        resume.Experience = resume.Experience.map((exp: any) => ({
-          ...exp,
-          title: exp.jobTitle,
-          workSummary: exp.description,
-        }));
-      }
-      
-      if (resume.Education) {
-        resume.Education = resume.Education.map((edu: any) => ({
-          ...edu,
-          universityName: edu.schoolName,
-          major: edu.fieldOfStudy,
-        }));
-      }
-      
-      if (resume.Skill) {
-        resume.Skill = resume.Skill.map((skill: any) => ({
-          ...skill,
-          name: skill.skillName,
-          rating: skill.proficiency,
-        }));
-      }
-      
-      return resume;
-    });
+    // Use centralized mapper for each resume
+    const mappedResumes = (rows || []).map((dbResume: DBResume) => 
+      mapResumeFromDB(dbResume)
+    );
     
     return JSON.stringify(mappedResumes);
   } catch (error: any) {
@@ -195,7 +160,7 @@ export async function updateResume({
 
 export async function addExperienceToResume(
   resumeId: string,
-  experienceDataArray: any
+  experienceDataArray: FrontendExperience[]
 ) {
   try {
     // verify resume exists
@@ -205,19 +170,17 @@ export async function addExperienceToResume(
     // delete existing experiences
     await supabaseFetch(`Experience?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
-    // insert new experiences (bulk)
+    // Use mapper to convert frontend format to DB format
     const now = new Date().toISOString();
-    const mapped = experienceDataArray.map((exp: any) => ({
-      id: uuidv4(),
-      resumeId,
-      jobTitle: exp.title || null,
-      companyName: exp.companyName || null,
-      startDate: exp.startDate || null,
-      endDate: exp.endDate || null,
-      description: exp.workSummary || null,
-      createdAt: now,
-      updatedAt: now,
-    }));
+    const mapped = experienceDataArray.map((exp) => {
+      const dbExp = mapExperienceToDB(exp, resumeId);
+      return {
+        ...dbExp,
+        id: uuidv4(), // Generate new ID for each
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
 
     if (mapped.length > 0) {
       await supabaseFetch('Experience', {
@@ -227,8 +190,12 @@ export async function addExperienceToResume(
       });
     }
 
-    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`);
-    return { success: true, data: JSON.stringify(updated[0] ?? null) };
+    // Fetch updated resume and map back to frontend format
+    const updated = await supabaseFetch(
+      `Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`
+    );
+    const frontendResume = mapResumeFromDB(updated[0] as DBResume);
+    return { success: true, data: JSON.stringify(frontendResume) };
   } catch (error: any) {
     console.error("Error adding or updating experience to resume: ", error);
     return { success: false, error: error?.message };
@@ -237,7 +204,7 @@ export async function addExperienceToResume(
 
 export async function addEducationToResume(
   resumeId: string,
-  educationDataArray: any
+  educationDataArray: FrontendEducation[]
 ) {
   try {
     const resumeRows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=id`);
@@ -245,19 +212,17 @@ export async function addEducationToResume(
 
     await supabaseFetch(`Education?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
+    // Use mapper to convert frontend format to DB format
     const now = new Date().toISOString();
-    const mapped = educationDataArray.map((edu: any) => ({
-      id: uuidv4(),
-      resumeId,
-      schoolName: edu.universityName || null,
-      degree: edu.degree || null,
-      fieldOfStudy: edu.major || null,
-      startDate: edu.startDate || null,
-      endDate: edu.endDate || null,
-      description: edu.description || null,
-      createdAt: now,
-      updatedAt: now,
-    }));
+    const mapped = educationDataArray.map((edu) => {
+      const dbEdu = mapEducationToDB(edu, resumeId);
+      return {
+        ...dbEdu,
+        id: uuidv4(),
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
 
     if (mapped.length > 0) {
       await supabaseFetch('Education', {
@@ -267,8 +232,12 @@ export async function addEducationToResume(
       });
     }
 
-    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`);
-    return { success: true, data: JSON.stringify(updated[0] ?? null) };
+    // Fetch updated resume and map back to frontend format
+    const updated = await supabaseFetch(
+      `Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`
+    );
+    const frontendResume = mapResumeFromDB(updated[0] as DBResume);
+    return { success: true, data: JSON.stringify(frontendResume) };
   } catch (error: any) {
     console.error("Error adding or updating education to resume: ", error);
     return { success: false, error: error?.message };
@@ -277,7 +246,7 @@ export async function addEducationToResume(
 
 export async function addSkillToResume(
   resumeId: string,
-  skillDataArray: any
+  skillDataArray: FrontendSkill[]
 ) {
   try {
     const resumeRows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=id`);
@@ -285,15 +254,17 @@ export async function addSkillToResume(
 
     await supabaseFetch(`Skill?resumeId=eq.${resumeId}`, { method: 'DELETE' });
 
+    // Use mapper to convert frontend format to DB format
     const now = new Date().toISOString();
-    const mapped = skillDataArray.map((s: any) => ({
-      id: uuidv4(),
-      resumeId,
-      skillName: s.name || null,
-      proficiency: s.rating || null,
-      createdAt: now,
-      updatedAt: now,
-    }));
+    const mapped = skillDataArray.map((skill) => {
+      const dbSkill = mapSkillToDB(skill, resumeId);
+      return {
+        ...dbSkill,
+        id: uuidv4(),
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
 
     if (mapped.length > 0) {
       await supabaseFetch('Skill', {
@@ -303,8 +274,12 @@ export async function addSkillToResume(
       });
     }
 
-    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`);
-    return { success: true, data: JSON.stringify(updated[0] ?? null) };
+    // Fetch updated resume and map back to frontend format
+    const updated = await supabaseFetch(
+      `Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`
+    );
+    const frontendResume = mapResumeFromDB(updated[0] as DBResume);
+    return { success: true, data: JSON.stringify(frontendResume) };
   } catch (error: any) {
     console.error("Error adding or updating skill to resume: ", error);
     return { success: false, error: error?.message };
