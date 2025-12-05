@@ -15,10 +15,10 @@ const page = () => {
       <section>
         <div className="py-8 px-6 mx-auto max-w-screen-xl text-center lg:py-16 lg:px-12 md:px-10">
           <h1 className="mt-4 lg:mt-8 mb-4 text-4xl font-extrabold tracking-tight leading-none text-black md:text-5xl lg:text-6xl">
-            Generate Tailored <span className="text-primary-700 max-sm:block">Cover Letters</span> With AI
+            Build Your Perfect <span className="text-primary-700 max-sm:block">Resume</span> With AI
           </h1>
           <p className="mb-8 text-lg font-normal text-gray-700 lg:text-xl sm:px-16 xl:px-48">
-            Paste a job description and attach your current CV — get a personalized cover letter that highlights why you're the perfect fit.
+            Create a professional, ATS-friendly resume in minutes. Our AI-powered tools help you craft compelling summaries and highlight your experience perfectly.
           </p>
           <div className="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-4">
             <Link
@@ -26,7 +26,7 @@ const page = () => {
               className="relative flex h-11 w-full items-center justify-center px-6 before:absolute before:inset-0 before:rounded-full before:bg-primary-700 before:transition before:duration-300 hover:before:scale-105 active:duration-75 active:before:scale-95 sm:w-max"
             >
               <span className="relative text-base font-semibold text-white">
-                Create Cover Letter
+                Create Your Resume
               </span>
             </Link>
             <Link
@@ -45,7 +45,7 @@ const page = () => {
           How it Works
         </h2>
         <h2 className="text-md text-gray-500">
-          Create a tailored cover letter in just 3 steps
+          Create your professional resume in just 3 simple steps
         </h2>
 
         <div className="mt-8 grid grid-cols-1 gap-8 text-center md:text-start md:grid-cols-2 lg:grid-cols-3 md:px-24">
@@ -53,11 +53,11 @@ const page = () => {
             <AtomIcon className="h-8 w-8" />
 
             <h2 className="mt-4 text-xl font-bold text-black">
-              Provide the Job Description
+              Fill Your Information
             </h2>
 
             <p className="mt-1 text-sm text-gray-600 md:text-justify">
-              Paste or upload the job description youre applying for — the more detail, the better the tailoring.
+              Add your personal details, work experience, education, and skills. Our intuitive forms make it quick and easy.
             </p>
           </div>
 
@@ -65,11 +65,11 @@ const page = () => {
             <Edit className="h-8 w-8" />
 
             <h2 className="mt-4 text-xl font-bold text-black">
-              Attach Your CV
+              AI-Powered Content
             </h2>
 
             <p className="mt-1 text-sm text-gray-600 md:text-justify">
-              Upload your current CV (PDF or DOCX). Our system extracts the key experience and skills to incorporate into your cover letter.
+              Let our AI generate compelling summaries and job descriptions based on your role. Choose from multiple suggestions tailored to your experience level.
             </p>
           </div>
 
@@ -77,11 +77,11 @@ const page = () => {
             <Share2 className="h-8 w-8" />
 
             <h2 className="mt-4 text-xl font-bold text-black">
-              Generate & Customize
+              Preview & Download
             </h2>
 
             <p className="mt-1 text-sm text-gray-600 md:text-justify">
-              Generate a draft cover letter tailored to the role, then edit the tone or details to make it your own.
+              See your resume in real-time as you build it. Choose your preferred color theme and download as PDF when you're satisfied.
             </p>
           </div>
         </div>
