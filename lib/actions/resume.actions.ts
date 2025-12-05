@@ -67,7 +67,7 @@ export async function createResume({
 
 export async function fetchResume(resumeId: string) {
   try {
-    const select = encodeURIComponent('*,experience(*),education(*),skills(*)');
+    const select = encodeURIComponent('*,Experience(*),Education(*),Skill(*)');
     const rows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${select}`);
     return JSON.stringify(rows[0] ?? null);
   } catch (error: any) {
@@ -81,7 +81,7 @@ export async function fetchUserResumes(userId: string) {
   }
 
   try {
-    const select = encodeURIComponent('*,experience(*),education(*),skills(*)');
+    const select = encodeURIComponent('*,Experience(*),Education(*),Skill(*)');
     const rows = await supabaseFetch(`Resume?userId=eq.${userId}&select=${select}&order=updatedAt.desc`);
     return JSON.stringify(rows || []);
   } catch (error: any) {
@@ -168,7 +168,7 @@ export async function addExperienceToResume(
       });
     }
 
-    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,experience(*),education(*),skills(*)')}`);
+    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`);
     return { success: true, data: JSON.stringify(updated[0] ?? null) };
   } catch (error: any) {
     console.error("Error adding or updating experience to resume: ", error);
@@ -208,7 +208,7 @@ export async function addEducationToResume(
       });
     }
 
-    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,experience(*),education(*),skills(*)')}`);
+    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`);
     return { success: true, data: JSON.stringify(updated[0] ?? null) };
   } catch (error: any) {
     console.error("Error adding or updating education to resume: ", error);
@@ -244,7 +244,7 @@ export async function addSkillToResume(
       });
     }
 
-    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,experience(*),education(*),skills(*)')}`);
+    const updated = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${encodeURIComponent('*,Experience(*),Education(*),Skill(*)')}`);
     return { success: true, data: JSON.stringify(updated[0] ?? null) };
   } catch (error: any) {
     console.error("Error adding or updating skill to resume: ", error);
