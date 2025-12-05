@@ -69,7 +69,36 @@ export async function fetchResume(resumeId: string) {
   try {
     const select = encodeURIComponent('*,Experience(*),Education(*),Skill(*)');
     const rows = await supabaseFetch(`Resume?resumeId=eq.${resumeId}&select=${select}`);
-    return JSON.stringify(rows[0] ?? null);
+    const resume = rows[0] ?? null;
+    
+    if (resume) {
+      // Map DB column names to frontend field names
+      if (resume.Experience) {
+        resume.Experience = resume.Experience.map((exp: any) => ({
+          ...exp,
+          title: exp.jobTitle,
+          workSummary: exp.description,
+        }));
+      }
+      
+      if (resume.Education) {
+        resume.Education = resume.Education.map((edu: any) => ({
+          ...edu,
+          universityName: edu.schoolName,
+          major: edu.fieldOfStudy,
+        }));
+      }
+      
+      if (resume.Skill) {
+        resume.Skill = resume.Skill.map((skill: any) => ({
+          ...skill,
+          name: skill.skillName,
+          rating: skill.proficiency,
+        }));
+      }
+    }
+    
+    return JSON.stringify(resume);
   } catch (error: any) {
     throw new Error(`Failed to fetch resume: ${error.message}`);
   }
@@ -83,7 +112,37 @@ export async function fetchUserResumes(userId: string) {
   try {
     const select = encodeURIComponent('*,Experience(*),Education(*),Skill(*)');
     const rows = await supabaseFetch(`Resume?userId=eq.${userId}&select=${select}&order=updatedAt.desc`);
-    return JSON.stringify(rows || []);
+    
+    // Map DB column names to frontend field names for each resume
+    const mappedResumes = (rows || []).map((resume: any) => {
+      if (resume.Experience) {
+        resume.Experience = resume.Experience.map((exp: any) => ({
+          ...exp,
+          title: exp.jobTitle,
+          workSummary: exp.description,
+        }));
+      }
+      
+      if (resume.Education) {
+        resume.Education = resume.Education.map((edu: any) => ({
+          ...edu,
+          universityName: edu.schoolName,
+          major: edu.fieldOfStudy,
+        }));
+      }
+      
+      if (resume.Skill) {
+        resume.Skill = resume.Skill.map((skill: any) => ({
+          ...skill,
+          name: skill.skillName,
+          rating: skill.proficiency,
+        }));
+      }
+      
+      return resume;
+    });
+    
+    return JSON.stringify(mappedResumes);
   } catch (error: any) {
     throw new Error(`Failed to fetch user resumes: ${error.message}`);
   }
