@@ -37,13 +37,13 @@ model Resume {
 model Experience {
   id           String   @id @default(cuid())
   resumeId     String
-  title        String?
+  jobTitle     String?  @map("jobTitle")
   companyName  String?
   city         String?
   state        String?
   startDate    String?
   endDate      String?
-  workSummary  String?
+  description  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -55,9 +55,9 @@ model Experience {
 model Education {
   id             String   @id @default(cuid())
   resumeId       String
-  universityName String?
+  schoolName     String?  @map("schoolName")
   degree         String?
-  major          String?
+  fieldOfStudy   String?  @map("fieldOfStudy")
   startDate      String?
   endDate        String?
   description    String?
@@ -72,10 +72,10 @@ model Education {
 model Skill {
   id        String   @id @default(cuid())
   resumeId  String
-  name      String?
-  rating    Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  skillName  String?  @map("skillName")
+  proficiency String? @map("proficiency")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   resume Resume @relation(fields: [resumeId], references: [resumeId], onDelete: Cascade)
 
