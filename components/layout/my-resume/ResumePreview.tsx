@@ -33,17 +33,17 @@ const ResumePreview = ({ download = false }) => {
     {
       index: 3,
       component: <ExperiencePreview />,
-      condition: formData?.experience?.length > 0,
+      condition: formData?.Experience?.length > 0,
     },
     {
       index: 4,
       component: <EducationalPreview />,
-      condition: formData?.education?.length > 0,
+      condition: formData?.Education?.length > 0,
     },
     {
       index: 5,
       component: <SkillsPreview />,
-      condition: formData?.skills?.length > 0,
+      condition: formData?.Skill?.length > 0,
     },
   ];
 
