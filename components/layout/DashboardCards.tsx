@@ -1,6 +1,7 @@
 "use client";
 
 import AddResume from "@/components/common/AddResume";
+import EventCrawlerCard from "@/components/common/EventCrawlerCard";
 import ResumeCard from "@/components/common/ResumeCard";
 import { fetchUserResumes } from "@/lib/actions/resume.actions";
 import { useUser } from "@clerk/nextjs";
@@ -29,6 +30,7 @@ const DashboardCards = () => {
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 mt-10 gap-8">
         <AddResume userId={userId} />
+        <EventCrawlerCard />
 
         {resumeList !== null
           ? resumeList.map((resume: any) => (

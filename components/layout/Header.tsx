@@ -17,6 +17,17 @@ const Header = () => {
               Nala AI
             </span>
           </Link>
+          <div className="hidden md:flex items-center md:order-2 gap-4">
+            {user?.isSignedIn && (
+              <Link
+                href="/event-crawler"
+                className="text-gray-800 hover:bg-primary-700/10 duration-300 focus:ring-4 focus:ring-primary-700/30 font-medium rounded-full text-sm px-4 py-2 focus:outline-none"
+              >
+                Event Crawler
+              </Link>
+            )}
+          </div>
+
           <div className="flex items-center lg:order-2">
             {user?.isLoaded && !user?.isSignedIn ? (
               <Link
