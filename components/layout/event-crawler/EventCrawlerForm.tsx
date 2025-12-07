@@ -60,16 +60,26 @@ const EventCrawlerForm: React.FC<EventCrawlerFormProps> = ({
         description: `Captured ${data.events.length} event(s)`,
       });
     } catch (error) {
-      const errorMessage =
+      let errorMessage =
         error instanceof Error
           ? error.message
           : "An error occurred while scanning for events. Make sure the URL is valid and accessible.";
+      
+      // Add helpful suggestions based on error type
+      if (errorMessage.includes("Failed to launch browser")) {
+        errorMessage += " - Browser resources unavailable, try again in a moment";
+      } else if (errorMessage.includes("timeout")) {
+        errorMessage += " - The website took too long to load, try a simpler URL";
+      } else if (errorMessage.includes("not found")) {
+        errorMessage += " - Installation issue, contact support";
+      }
+      
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
       });
-      console.error("Scan error:", error);
+      console.error("Scan error details:", error);
     } finally {
       setLoading(false);
     }

@@ -43,6 +43,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanEvent
       // Dynamic import of puppeteer
       const puppeteer = await import("puppeteer");
       
+      console.log("Launching browser with puppeteer...");
       const browser = await puppeteer.default.launch({
         headless: "new",
         args: [
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanEvent
         ],
       });
       
+      console.log("Browser launched successfully, creating new page...");
       const page = await browser.newPage();
 
       // Intercept dataLayer push events
@@ -110,30 +112,54 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanEvent
         }
       });
 
+      console.log(`Navigating to URL: ${url}`);
       // Navigate to URL
       try {
         await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+        console.log("Page loaded successfully");
       } catch (navError) {
-        console.log("Navigation warning (continuing anyway):", navError);
+        const navErrorMsg = navError instanceof Error ? navError.message : String(navError);
+        console.log("Navigation warning (continuing anyway):", navErrorMsg);
       }
 
       // Wait a bit for events to be captured
+      console.log("Waiting for events to be captured...");
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // Extract captured events from the page
+      console.log("Extracting captured events from page...");
       const capturedEvents = await page.evaluate(() => {
         return (window as any).__capturedGAEvents || [];
       });
 
+      console.log(`Found ${capturedEvents.length} events`);
       events.push(...capturedEvents);
 
       // Close browser
+      console.log("Closing browser...");
       await browser.close();
     } catch (browserError) {
-      console.error("Browser automation error:", browserError);
-      throw new Error(
-        "Browser automation is temporarily unavailable. Please try again in a moment."
-      );
+      const errorMsg = browserError instanceof Error ? browserError.message : String(browserError);
+      const errorStack = browserError instanceof Error ? browserError.stack : "";
+      console.error("Browser automation error:", {
+        message: errorMsg,
+        stack: errorStack,
+        type: typeof browserError,
+      });
+      
+      // Provide more detailed error message
+      let detailedError = "Browser automation error: ";
+      if (errorMsg.includes("spawn")) {
+        detailedError += "Failed to launch browser - check system resources";
+      } else if (errorMsg.includes("ENOENT")) {
+        detailedError += "Browser executable not found - Puppeteer may not be properly installed";
+      } else if (errorMsg.includes("timeout")) {
+        detailedError += "Browser operation timed out - the website may be slow or blocked";
+      } else {
+        detailedError += errorMsg;
+      }
+      
+      throw new Error(detailedError);
     }
 
     return NextResponse.json(
@@ -145,15 +171,25 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanEvent
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error scanning events:", error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : "";
+    
+    console.error("API Error:", {
+      message: errorMsg,
+      stack: errorStack,
+      type: typeof error,
+      timestamp: new Date().toISOString(),
+    });
+
     return NextResponse.json(
       {
         success: false,
         events: [],
-        error:
-          error instanceof Error
-            ? error.message
-            : "An error occurred while scanning events",
+        error: errorMsg,
+        details: {
+          type: error instanceof Error ? error.name : "Unknown",
+          timestamp: new Date().toISOString(),
+        },
       },
       { status: 500 }
     );
