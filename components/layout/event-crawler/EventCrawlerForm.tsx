@@ -61,12 +61,15 @@ const EventCrawlerForm: React.FC<EventCrawlerFormProps> = ({
       });
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "An error occurred";
+        error instanceof Error
+          ? error.message
+          : "An error occurred while scanning for events. Make sure the URL is valid and accessible.";
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
       });
+      console.error("Scan error:", error);
     } finally {
       setLoading(false);
     }

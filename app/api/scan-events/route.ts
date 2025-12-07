@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chromium } from "@playwright/test";
 
 export const maxDuration = 60;
 
@@ -40,85 +39,102 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanEvent
 
     const events: ScannedEvent[] = [];
 
-    // Launch browser
-    const browser = await chromium.launch();
-    const context = await browser.newContext();
-    const page = await context.newPage();
+    try {
+      // Dynamic import of puppeteer
+      const puppeteer = await import("puppeteer");
+      
+      const browser = await puppeteer.default.launch({
+        headless: "new",
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+        ],
+      });
+      
+      const page = await browser.newPage();
 
-    // Intercept dataLayer push events
-    await page.addInitScript(() => {
-      // Store original push method
-      const originalDataLayerPush = Array.prototype.push;
+      // Intercept dataLayer push events
+      await page.evaluateOnNewDocument(() => {
+        // Store original push method
+        const originalDataLayerPush = Array.prototype.push;
 
-      // Override window.dataLayer if it doesn't exist
-      if (typeof window !== "undefined") {
-        (window as any).dataLayer = (window as any).dataLayer || [];
+        // Override window.dataLayer if it doesn't exist
+        if (typeof window !== "undefined") {
+          (window as any).dataLayer = (window as any).dataLayer || [];
 
-        // Create a proxy to capture pushes
-        const capturedEvents: ScannedEvent[] = [];
+          // Create a proxy to capture pushes
+          const capturedEvents: any[] = [];
 
-        // Override push method on dataLayer
-        (window as any).dataLayer.push = function (...args: any[]) {
-          const eventData = args[0] || {};
-          const eventName = eventData.event || eventData.eventName || "unnamed";
+          // Override push method on dataLayer
+          (window as any).dataLayer.push = function (...args: any[]) {
+            const eventData = args[0] || {};
+            const eventName = eventData.event || eventData.eventName || "unnamed";
 
-          // Capture event
-          capturedEvents.push({
-            eventName,
-            timestamp: Date.now(),
-            payload: eventData,
-            selector: (document.activeElement as HTMLElement)?.id || undefined,
-          });
-
-          // Store in window for later retrieval
-          (window as any).__capturedGAEvents = capturedEvents;
-
-          // Call original push
-          return originalDataLayerPush.call(this, ...args);
-        };
-      }
-
-      // Also capture gtag calls
-      if (typeof window !== "undefined") {
-        const originalGtag = (window as any).gtag;
-        (window as any).gtag = function (command: string, eventName?: string, params?: any) {
-          if (command === "event" && eventName) {
-            const capturedEvents = (window as any).__capturedGAEvents || [];
+            // Capture event
             capturedEvents.push({
-              eventName: eventName,
+              eventName,
               timestamp: Date.now(),
-              payload: params || {},
+              payload: eventData,
               selector: (document.activeElement as HTMLElement)?.id || undefined,
             });
+
+            // Store in window for later retrieval
             (window as any).__capturedGAEvents = capturedEvents;
-          }
 
-          // Call original gtag if it exists
-          if (originalGtag) {
-            return originalGtag.call(this, command, eventName, params);
-          }
-        };
+            // Call original push
+            return originalDataLayerPush.call(this, ...args);
+          };
+        }
+
+        // Also capture gtag calls
+        if (typeof window !== "undefined") {
+          const originalGtag = (window as any).gtag;
+          (window as any).gtag = function (command: string, eventName?: string, params?: any) {
+            if (command === "event" && eventName) {
+              const capturedEvents = (window as any).__capturedGAEvents || [];
+              capturedEvents.push({
+                eventName: eventName,
+                timestamp: Date.now(),
+                payload: params || {},
+                selector: (document.activeElement as HTMLElement)?.id || undefined,
+              });
+              (window as any).__capturedGAEvents = capturedEvents;
+            }
+
+            // Call original gtag if it exists
+            if (originalGtag) {
+              return originalGtag.call(this, command, eventName, params);
+            }
+          };
+        }
+      });
+
+      // Navigate to URL
+      try {
+        await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+      } catch (navError) {
+        console.log("Navigation warning (continuing anyway):", navError);
       }
-    });
 
-    // Navigate to URL with wait for network idle
-    await page.goto(url, { waitUntil: "networkidle", timeout: 30000 }).catch(() => {
-      // Continue even if navigation times out
-    });
+      // Wait a bit for events to be captured
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    // Wait a bit for events to be captured
-    await page.waitForTimeout(3000);
+      // Extract captured events from the page
+      const capturedEvents = await page.evaluate(() => {
+        return (window as any).__capturedGAEvents || [];
+      });
 
-    // Extract captured events from the page
-    const capturedEvents = await page.evaluate(() => {
-      return (window as any).__capturedGAEvents || [];
-    });
+      events.push(...capturedEvents);
 
-    events.push(...capturedEvents);
-
-    // Close browser
-    await context.close();
-    await browser.close();
+      // Close browser
+      await browser.close();
+    } catch (browserError) {
+      console.error("Browser automation error:", browserError);
+      throw new Error(
+        "Browser automation is temporarily unavailable. Please try again in a moment."
+      );
+    }
 
     return NextResponse.json(
       {
