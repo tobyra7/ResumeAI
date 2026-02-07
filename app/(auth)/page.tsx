@@ -15,7 +15,7 @@ const page = () => {
       <section>
         <div className="py-8 px-6 mx-auto max-w-screen-xl text-center lg:py-16 lg:px-12 md:px-10">
           <h1 className="mt-4 lg:mt-8 mb-4 text-4xl font-extrabold tracking-tight leading-none text-black md:text-5xl lg:text-6xl">
-            Build Your Perfect <span className="text-primary-700 max-sm:block">Resume</span> With AI
+            Build Your Perfect <span className="text-primary-700 max-sm:block">Resume</span> With Nala AI
           </h1>
           <p className="mb-8 text-lg font-normal text-gray-700 lg:text-xl sm:px-16 xl:px-48">
             Create a professional, ATS-friendly resume in minutes. Our AI-powered tools help you craft compelling summaries and highlight your experience perfectly.
